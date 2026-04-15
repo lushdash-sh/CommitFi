@@ -163,6 +163,24 @@ npm run dev
 ```
 Application runs on `http://localhost:5173`
 
+## Vercel Environment Setup (Strava)
+
+In Vercel Dashboard: Project -> Settings -> Environment Variables
+
+Add these variables:
+
+- `VITE_STRAVA_CLIENT_ID` (frontend-safe)
+- `STRAVA_CLIENT_SECRET` (server-only)
+- `STRAVA_REDIRECT_URI` (must match Strava app callback URL)
+- `VITE_STRAVA_REDIRECT_URI` (frontend callback URL)
+- `VITE_STRAVA_TOKEN_EXCHANGE_URL` (set to `/api/strava`)
+
+Notes:
+
+- Keep `.env` out of git (already ignored).
+- Never expose `STRAVA_CLIENT_SECRET` in frontend code or VITE_ variables.
+- Strava token exchange and activity fetch run through `projects/frontend/api/strava.js`.
+
 ### Smart Contract Development
 ```bash
 cd projects/contracts
