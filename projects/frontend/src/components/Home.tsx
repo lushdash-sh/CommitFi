@@ -43,7 +43,7 @@ const Home = ({ onViewDetails }: HomeProps) => {
       <div className="text-center max-w-5xl mx-auto">
         <div className="mb-8">
           <h2 className="text-6xl md:text-8xl font-cyber font-bold mb-4 bg-gradient-to-r from-neon-green via-neon-blue to-neon-purple bg-clip-text text-transparent animate-pulse-slow tracking-tighter">
-            STOP PROCRASTINATING
+           PROCRASTINATING
           </h2>
           <h3 className="text-5xl md:text-7xl font-cyber font-bold mb-6 text-white tracking-wide">
             START <span className="text-neon-green">STAKING</span>
