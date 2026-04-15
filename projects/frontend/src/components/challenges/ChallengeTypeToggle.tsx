@@ -1,4 +1,4 @@
-type ChallengeCategory = 'academics' | 'fitness'
+type ChallengeCategory = 'academics' | 'fitness' | 'business'
 
 interface ChallengeTypeToggleProps {
   selectedCategory: ChallengeCategory
@@ -9,6 +9,7 @@ const ChallengeTypeToggle = ({ selectedCategory, onChange }: ChallengeTypeToggle
   const options: Array<{ id: ChallengeCategory; label: string }> = [
     { id: 'academics', label: 'Academics' },
     { id: 'fitness', label: 'Fitness & Diet' },
+    { id: 'business', label: 'Business' },
   ]
 
   return (

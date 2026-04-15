@@ -4,6 +4,7 @@ import ConnectWallet from './ConnectWallet'
 import Home from './Home'
 import Staking from './Staking'
 import StudyCircle from './StudyCircle'
+import StudyCircleHub from './StudyCircleHub'
 import Vault from './Vault'
 
 // Types
@@ -31,12 +32,16 @@ const renderCurrentPage = () => {
       case 'staking':
         return <Staking onCreated={() => setCurrentPage('home')} />
       case 'study-circle':
-        // FIX: If no circle selected, show the "Lobby" (Vault in selection mode)
-        return selectedChallengeId ? 
-          <StudyCircle challengeId={selectedChallengeId} /> : 
-          <Vault onViewDetails={handleNavigateToStudy} selectionMode={true} /> // <--- Added selectionMode={true}
+        return selectedChallengeId ? (
+          <StudyCircle 
+            challengeId={selectedChallengeId}
+            onBack={() => setSelectedChallengeId(null)}
+          />
+        ) : (
+          <StudyCircleHub onSelectChallenge={handleNavigateToStudy} />
+        )
       case 'vault':
-        return <Vault onViewDetails={handleNavigateToStudy} selectionMode={false} /> // <--- Explicitly false
+        return <Vault onViewDetails={handleNavigateToStudy} selectionMode={false} />
       default:
         return <Home onViewDetails={handleNavigateToStudy} />
     }
@@ -45,7 +50,7 @@ const renderCurrentPage = () => {
   // Helper to format tab names nicely
   const getTabLabel = (page: string) => {
     if (page === 'staking') return 'Create Challenge'
-    if (page === 'study-circle') return 'Study Circle'
+    if (page === 'study-circle') return 'Your Circle/Contract'
     return page
   }
 
