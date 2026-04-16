@@ -1,8 +1,4 @@
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/08c940af-a766-4e68-9ac8-1123cac1c7fe" width="600"/>
-</p>
-
-## 🎯 Commit-Fi:
+# 🎯 Commit-Fi:
 Turn Your Goals into Guaranteed SuccessStop procrastinating. Start achieving. With real skin in the game.What if every goal came with real consequences? What if your ambition was backed by actual money? Commit-Fi transforms procrastination into productivity through blockchain-powered commitment contracts that make success inevitable and failure costly.
 
 ### 🚀 How It Works:
@@ -79,4 +75,11 @@ Commit your changes: git commit -m 'Add some AmazingFeature'
 Push to the branch: git push origin feature/AmazingFeature
 Open a Pull Request
 If you have questions, feature requests, or just want to discuss the future of accountability protocols, feel free to open an Issue or start a Discussion in the repository.
+### 💡Future Ideas 
+DeFi Expansion: Integrate yield-bearing ALGO stakes and USDC stablecoin support for risk-averse users.
+Oracle Library: Automate goal verification for new platforms like GitHub, Duolingo, and LeetCode.
+Gamification: Reward successful users with Soulbound NFT badges and introduce spectator prediction betting.
+B2B Escrow: Support milestone-based smart contract payouts and decentralized jury dispute resolution for freelancers.
+
+## Commit-Fi: Where your best intentions meet the power of the chain—Build the future you, one stake at a time! ✨
 
