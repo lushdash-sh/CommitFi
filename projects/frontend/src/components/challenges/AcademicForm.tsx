@@ -111,7 +111,7 @@ const AcademicForm = ({ formData, loading, onChange, onSubmit }: AcademicFormPro
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-5 mt-4 bg-gradient-to-r from-neon-green to-neon-blue text-black font-bold font-mono text-xl rounded shadow-[0_0_20px_rgba(0,255,136,0.3)] hover:shadow-[0_0_40px_rgba(0,255,136,0.6)] transition-all uppercase tracking-wider disabled:opacity-50"
+        className="w-full py-5 mt-4 bg-gradient-to-r from-neon-green to-neon-blue text-black font-bold font-mono text-xl rounded shadow-[0_0_20px_rgba(0,255,136,0.3)] hover:shadow-[0_0_40px_rgba(0,255,136,0.6)] transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
       >
         {loading ? 'DEPLOYING CONTRACT...' : 'PAY STAKE & CREATE'}
       </button>

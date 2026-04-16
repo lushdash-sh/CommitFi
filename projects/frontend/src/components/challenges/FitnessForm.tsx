@@ -1,12 +1,13 @@
 import type { ChangeEvent, FormEvent } from 'react'
-import type { FitnessActivityType } from '../../services/StravaService'
 
 export interface FitnessFormData {
   title: string
   description: string
   stakeAmount: number
-  durationDays: number
-  activityType: FitnessActivityType
+  maxMembers: number
+  durationValue: number
+  durationUnit: 'hours' | 'days' | 'months'
+  activityType: string // Changed to string for free typing
   targetGoal: string
 }
 
@@ -71,36 +72,55 @@ const FitnessForm = ({
         </div>
 
         <div>
-          <label className="block text-gray-400 font-mono text-xs uppercase mb-2">Duration (Days)</label>
-          <input
-            type="number"
-            min={1}
-            className="w-full bg-black/40 border border-gray-700 rounded p-4 text-white focus:border-neon-green outline-none font-mono"
-            value={formData.durationDays}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => onInputChange('durationDays', Number(event.target.value))}
-          />
+          <label className="block text-gray-400 font-mono text-xs uppercase mb-2">Duration</label>
+          <div className="flex">
+            <input
+              type="number"
+              min={1}
+              className="w-2/3 bg-black/40 border border-gray-700 rounded-l p-4 text-white focus:border-neon-green outline-none font-mono"
+              value={formData.durationValue}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => onInputChange('durationValue', Number(event.target.value))}
+            />
+            <select
+              className="w-1/3 bg-gray-900 border border-l-0 border-gray-700 rounded-r text-white focus:border-neon-green outline-none font-mono text-sm px-2 cursor-pointer"
+              value={formData.durationUnit}
+              onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                onInputChange('durationUnit', event.target.value as FitnessFormData['durationUnit'])
+              }
+            >
+              <option value="hours">Hours</option>
+              <option value="days">Days</option>
+              <option value="months">Months</option>
+            </select>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-gray-400 font-mono text-xs uppercase mb-2">Activity Type</label>
-          <select
-            className="w-full bg-black/40 border border-gray-700 rounded p-4 text-white focus:border-neon-green outline-none font-mono cursor-pointer"
+          <input
+            type="text"
+            className="w-full bg-black/40 border border-gray-700 rounded p-4 text-white focus:border-neon-green outline-none font-mono"
+            placeholder="e.g. Running, Yoga, Swimming..."
             value={formData.activityType}
-            onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-              onInputChange('activityType', event.target.value as FitnessActivityType)
-            }
-          >
-            <option value="running">Running</option>
-            <option value="cycling">Cycling</option>
-            <option value="walking">Walking</option>
-            <option value="calories">Calories Burn</option>
-            <option value="steps">Steps</option>
-          </select>
+            onChange={(event: ChangeEvent<HTMLInputElement>) => onInputChange('activityType', event.target.value)}
+          />
         </div>
 
         <div>
+          <label className="block text-gray-400 font-mono text-xs uppercase mb-2">Max Participants</label>
+          <input
+            type="number"
+            min={1}
+            className="w-full bg-black/40 border border-gray-700 rounded p-4 text-white focus:border-neon-green outline-none font-mono"
+            value={formData.maxMembers}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => onInputChange('maxMembers', Number(event.target.value))}
+          />
+        </div>
+      </div>
+
+      <div className="mb-6">
           <label className="block text-gray-400 font-mono text-xs uppercase mb-2">Target Goal</label>
           <input
             className="w-full bg-black/40 border border-gray-700 rounded p-4 text-white focus:border-neon-green outline-none font-mono"
@@ -108,7 +128,6 @@ const FitnessForm = ({
             value={formData.targetGoal}
             onChange={(event: ChangeEvent<HTMLInputElement>) => onInputChange('targetGoal', event.target.value)}
           />
-        </div>
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 border border-neon-green/20 rounded-lg bg-black/30">
@@ -118,19 +137,26 @@ const FitnessForm = ({
             {stravaToken ? 'Connected and ready to verify activities.' : 'Not connected. Connect before creating fitness challenge.'}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onConnectStrava}
-          className="px-5 py-3 rounded-lg bg-gradient-to-r from-neon-green to-neon-blue text-cyber-black font-bold font-mono text-sm uppercase tracking-wider hover:shadow-[0_0_20px_rgba(0,255,136,0.4)] transition-all"
-        >
-          Connect with Strava
-        </button>
+        {/* CONDITIONAL RENDER: Hide button if connected! */}
+        {stravaToken ? (
+          <div className="px-5 py-3 rounded-lg bg-neon-green/20 border border-neon-green text-neon-green font-bold font-mono text-sm uppercase tracking-wider">
+            CONNECTED ✅
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onConnectStrava}
+            className="px-5 py-3 rounded-lg bg-gradient-to-r from-neon-green to-neon-blue text-cyber-black font-bold font-mono text-sm uppercase tracking-wider hover:shadow-[0_0_20px_rgba(0,255,136,0.4)] transition-all"
+          >
+            Connect with Strava
+          </button>
+        )}
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-5 mt-4 bg-gradient-to-r from-neon-green to-neon-blue text-black font-bold font-mono text-xl rounded shadow-[0_0_20px_rgba(0,255,136,0.3)] hover:shadow-[0_0_40px_rgba(0,255,136,0.6)] transition-all uppercase tracking-wider disabled:opacity-50"
+        className="w-full py-5 mt-4 bg-gradient-to-r from-neon-green to-neon-blue text-black font-bold font-mono text-xl rounded shadow-[0_0_20px_rgba(0,255,136,0.3)] hover:shadow-[0_0_40px_rgba(0,255,136,0.6)] transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
       >
         {loading ? 'CREATING FITNESS CHALLENGE...' : 'CREATE FITNESS CHALLENGE'}
       </button>

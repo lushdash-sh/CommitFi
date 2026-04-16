@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, query, orderBy, onSnapshot, addDoc, where, getDocs, getDoc, doc } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, addDoc, where, getDocs, getDoc, doc, updateDoc } from 'firebase/firestore'
 import { db } from '../utils/Firebase'
 import { useWallet } from '@txnlab/use-wallet-react'
 import ChallengeCard from './ChallengeCard'
@@ -23,27 +23,45 @@ const Home = ({ onViewDetails }: HomeProps) => {
     return () => unsubscribe()
   }, [])
 
-  const handleJoinRequest = async (challengeId: string, leaderAddress: string, challengeType: string = 'academic') => {
-    if (!activeAddress) return alert('Please Connect Wallet first!')
-    if (activeAddress === leaderAddress) return alert('You are the leader of this challenge!')
+  // NEW: Added challengeTitle to the parameters so we can save it!
+  const handleJoinRequest = async (challengeId: string, leaderAddress: string, challengeType: string = 'academic', challengeTitle: string = '') => {
+    if (!activeAddress) {
+      alert('❌ Please Connect Wallet first!')
+      return
+    }
+    
+    if (activeAddress === leaderAddress) {
+      alert('❌ You are the leader of this challenge!')
+      return
+    }
 
-    const q = query(
-      collection(db, 'requests'),
-      where('challengeId', '==', challengeId),
-      where('applicant', '==', activeAddress)
-    )
-    const existing = await getDocs(q)
-    if (!existing.empty) return alert('Request already sent! Check your Vault.')
+    try {
+      const q = query(
+        collection(db, 'requests'),
+        where('challengeId', '==', challengeId),
+        where('applicant', '==', activeAddress)
+      )
+      const existing = await getDocs(q)
+      
+      if (!existing.empty) {
+        alert('⚠️ Request already sent! Check your Vault.')
+        return
+      }
 
-    await addDoc(collection(db, 'requests'), {
-      challengeId,
-      leader: leaderAddress,
-      applicant: activeAddress,
-      status: 'pending',
-      timestamp: Date.now(),
-      type: challengeType,
-    })
-    alert('Request sent!')
+      await addDoc(collection(db, 'requests'), {
+        challengeId,
+        challengeTitle, // Save the title here!
+        leader: leaderAddress,
+        applicant: activeAddress,
+        status: 'pending',
+        timestamp: Date.now(),
+        type: challengeType,
+      })
+      alert('✅ Request sent! Check your Vault to track it.')
+    } catch (error) {
+      console.error('[Home] Error sending join request:', error)
+      alert('❌ Failed to send request: ' + (error as Error).message)
+    }
   }
 
   const handleBusinessRequest = async (challengeId: string, companyAAddress: string) => {
@@ -57,7 +75,7 @@ const Home = ({ onViewDetails }: HomeProps) => {
         where('applicant', '==', activeAddress)
       )
       const existing = await getDocs(q)
-      if (!existing.empty) return alert('Request already sent! Check your Vault.')
+      if (!existing.empty) return alert('Request already accepted! Check your Circle.')
 
       const challengeSnap = await getDoc(doc(db, 'challenges', challengeId))
       if (!challengeSnap.exists()) return alert('Challenge not found!')
@@ -70,16 +88,22 @@ const Home = ({ onViewDetails }: HomeProps) => {
         companyB: activeAddress,
         leader: companyAAddress,
         applicant: activeAddress,
-        status: 'pending',
+        status: 'approved',
         timestamp: Date.now(),
         type: 'business',
         role: 'company-b',
         reviewPeriodHours: challengeData.reviewPeriodHours || 48,
       })
-      alert('✅ Request sent to Company A!')
+
+      await updateDoc(doc(db, 'challenges', challengeId), {
+        companyB: activeAddress,
+        verificationStatus: 'awaiting-delivery',
+      })
+
+      alert('✅ Contract accepted! You can now submit proof.')
     } catch (error) {
-      console.error('Error sending request:', error)
-      alert('❌ Failed to send request: ' + (error as Error).message)
+      console.error('Error accepting contract:', error)
+      alert('❌ Failed to accept contract: ' + (error as Error).message)
     }
   }
 
@@ -87,10 +111,6 @@ const Home = ({ onViewDetails }: HomeProps) => {
     activeFilter === 'all'
       ? challenges
       : challenges.filter((c) => (c.type || 'academic') === activeFilter)
-
-  const getChallengesByType = (type: ChallengeType) => {
-    return challenges.filter((c) => (c.type || 'academic') === type)
-  }
 
   return (
     <section className="relative z-10 flex-grow flex flex-col items-center justify-center px-6 py-12">
@@ -109,7 +129,6 @@ const Home = ({ onViewDetails }: HomeProps) => {
           <span className="text-neon-pink">lose your stake</span>.
         </p>
 
-        {/* STATS BAR */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
           <div className="bg-black/40 backdrop-blur-sm border border-neon-green/20 rounded-xl p-8 hover:scale-105 transition-all">
             <div className="text-4xl font-bold text-neon-green font-mono mb-2">
@@ -128,53 +147,15 @@ const Home = ({ onViewDetails }: HomeProps) => {
         </div>
       </div>
 
-      {/* FILTER BUTTONS */}
       <div className="w-full max-w-7xl mb-8">
         <div className="flex gap-3 flex-wrap justify-center">
-          <button
-            onClick={() => setActiveFilter('all')}
-            className={`px-6 py-2 rounded-lg font-mono text-sm uppercase tracking-widest transition-all ${
-              activeFilter === 'all'
-                ? 'bg-neon-green text-black font-bold'
-                : 'bg-black/40 border border-gray-700 text-gray-300 hover:text-white'
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setActiveFilter('academic')}
-            className={`px-6 py-2 rounded-lg font-mono text-sm uppercase tracking-widest transition-all ${
-              activeFilter === 'academic'
-                ? 'bg-neon-green text-black font-bold'
-                : 'bg-black/40 border border-gray-700 text-gray-300 hover:text-white'
-            }`}
-          >
-            Academics
-          </button>
-          <button
-            onClick={() => setActiveFilter('fitness')}
-            className={`px-6 py-2 rounded-lg font-mono text-sm uppercase tracking-widest transition-all ${
-              activeFilter === 'fitness'
-                ? 'bg-neon-green text-black font-bold'
-                : 'bg-black/40 border border-gray-700 text-gray-300 hover:text-white'
-            }`}
-          >
-            Fitness
-          </button>
-          <button
-            onClick={() => setActiveFilter('business')}
-            className={`px-6 py-2 rounded-lg font-mono text-sm uppercase tracking-widest transition-all ${
-              activeFilter === 'business'
-                ? 'bg-neon-green text-black font-bold'
-                : 'bg-black/40 border border-gray-700 text-gray-300 hover:text-white'
-            }`}
-          >
-            Business
-          </button>
+          <button onClick={() => setActiveFilter('all')} className={`px-6 py-2 rounded-lg font-mono text-sm uppercase tracking-widest transition-all ${activeFilter === 'all' ? 'bg-neon-green text-black font-bold' : 'bg-black/40 border border-gray-700 text-gray-300 hover:text-white'}`}>All</button>
+          <button onClick={() => setActiveFilter('academic')} className={`px-6 py-2 rounded-lg font-mono text-sm uppercase tracking-widest transition-all ${activeFilter === 'academic' ? 'bg-neon-green text-black font-bold' : 'bg-black/40 border border-gray-700 text-gray-300 hover:text-white'}`}>Academics</button>
+          <button onClick={() => setActiveFilter('fitness')} className={`px-6 py-2 rounded-lg font-mono text-sm uppercase tracking-widest transition-all ${activeFilter === 'fitness' ? 'bg-neon-green text-black font-bold' : 'bg-black/40 border border-gray-700 text-gray-300 hover:text-white'}`}>Fitness</button>
+          <button onClick={() => setActiveFilter('business')} className={`px-6 py-2 rounded-lg font-mono text-sm uppercase tracking-widest transition-all ${activeFilter === 'business' ? 'bg-neon-green text-black font-bold' : 'bg-black/40 border border-gray-700 text-gray-300 hover:text-white'}`}>Business</button>
         </div>
       </div>
 
-      {/* CHALLENGE FEED */}
       <div className="w-full max-w-7xl">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredChallenges.length === 0 ? (
@@ -206,28 +187,14 @@ const Home = ({ onViewDetails }: HomeProps) => {
                         <div className="flex justify-between items-center">
                           <div className="text-neon-green font-bold">{challenge.stakeAmount} ALGO</div>
                           {isLeader ? (
-                            <button
-                              onClick={() => onViewDetails(challenge.id)}
-                              className="px-4 py-2 bg-neon-blue/20 text-neon-blue border border-neon-blue rounded text-xs font-bold hover:bg-neon-blue/30"
-                            >
-                              MANAGE
-                            </button>
+                            <button onClick={() => onViewDetails(challenge.id)} className="px-4 py-2 bg-neon-blue/20 text-neon-blue border border-neon-blue rounded text-xs font-bold hover:bg-neon-blue/30">MANAGE</button>
                           ) : (
-                            <button
-                              onClick={() => handleBusinessRequest(challenge.id, challenge.creator)}
-                              className="px-4 py-2 bg-neon-green/20 text-neon-green border border-neon-green rounded text-xs font-bold hover:bg-neon-green/30"
-                            >
-                              ACCEPT REQUEST
-                            </button>
+                            <button onClick={() => handleBusinessRequest(challenge.id, challenge.creator)} className="px-4 py-2 bg-neon-green/20 text-neon-green border border-neon-green rounded text-xs font-bold hover:bg-neon-green/30">ACCEPT REQUEST</button>
                           )}
                         </div>
                       </div>
                     </div>
-                    {isLeader && (
-                      <div className="absolute top-0 right-0 bg-neon-blue text-black text-[10px] font-bold px-2 py-1 uppercase z-20 rounded-bl">
-                        LEADER
-                      </div>
-                    )}
+                    {isLeader && <div className="absolute top-0 right-0 bg-neon-blue text-black text-[10px] font-bold px-2 py-1 uppercase z-20 rounded-bl">LEADER</div>}
                   </div>
                 )
               }
@@ -239,18 +206,11 @@ const Home = ({ onViewDetails }: HomeProps) => {
                     title={challenge.title}
                     stakeAmount={challenge.stakeAmount}
                     deadline={challenge.deadline}
-                    onJoin={
-                      isLeader
-                        ? () => onViewDetails(challenge.id)
-                        : () => handleJoinRequest(challenge.id, challenge.creator, challengeType)
-                    }
+                    // NEW: Passing the challenge.title to the request function!
+                    onJoin={isLeader ? () => onViewDetails(challenge.id) : () => handleJoinRequest(challenge.id, challenge.creator, challengeType, challenge.title)}
                     status={isLeader ? 'MANAGE' : 'Available'}
                   />
-                  {isLeader && (
-                    <div className="absolute top-0 right-0 bg-neon-blue text-black text-[10px] font-bold px-2 py-1 uppercase z-20 rounded-bl">
-                      LEADER
-                    </div>
-                  )}
+                  {isLeader && <div className="absolute top-0 right-0 bg-neon-blue text-black text-[10px] font-bold px-2 py-1 uppercase z-20 rounded-bl">LEADER</div>}
                 </div>
               )
             })

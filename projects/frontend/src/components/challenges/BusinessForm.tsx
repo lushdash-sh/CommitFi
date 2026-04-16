@@ -6,7 +6,9 @@ export interface BusinessFormData {
   stakeAmount: number
   durationDays: number
   reviewPeriodHours: number
-  companyA: string
+  companyAName: string
+  companyBAddress: string
+  companyBName: string
   deliverableType: string
 }
 
@@ -40,29 +42,50 @@ const BusinessForm = ({ formData, loading, onChange, onSubmit }: BusinessFormPro
       </div>
 
       <div>
-        <label className="block text-gray-400 font-mono text-xs uppercase mb-2">Description</label>
+        <label className="block text-gray-400 font-mono text-xs uppercase mb-2">Description & Requirements</label>
         <textarea
           className="w-full bg-black/40 border border-gray-700 rounded p-4 text-white focus:border-neon-green outline-none font-mono h-24 resize-none"
-          placeholder="Describe the business agreement and deliverables..."
+          placeholder="Describe the exact deliverables required for escrow release..."
           value={formData.description}
           onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onInputChange('description', event.target.value)}
         />
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-neon-blue font-mono text-xs uppercase mb-2">Your Company Name (A)</label>
+          <input
+            className="w-full bg-black/40 border border-gray-700 rounded p-4 text-white focus:border-neon-blue outline-none font-mono"
+            placeholder="e.g. Acme Corp"
+            value={formData.companyAName}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => onInputChange('companyAName', event.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-neon-pink font-mono text-xs uppercase mb-2">Counterparty Name (B)</label>
+          <input
+            className="w-full bg-black/40 border border-gray-700 rounded p-4 text-white focus:border-neon-pink outline-none font-mono"
+            placeholder="e.g. Dev Studio LLC"
+            value={formData.companyBName}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => onInputChange('companyBName', event.target.value)}
+          />
+        </div>
+      </div>
+
       <div>
-        <label className="block text-gray-400 font-mono text-xs uppercase mb-2">Your Company (Company A)</label>
+        <label className="block text-neon-pink font-mono text-xs uppercase mb-2">Counterparty Wallet Address (Company B)</label>
         <input
-          className="w-full bg-black/40 border border-gray-700 rounded p-4 text-white focus:border-neon-green outline-none font-mono"
-          placeholder="e.g. Acme Corp"
-          value={formData.companyA}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => onInputChange('companyA', event.target.value)}
+          className="w-full bg-black/40 border border-gray-700 rounded p-4 text-white focus:border-neon-pink outline-none font-mono"
+          placeholder="Paste Algorand Wallet Address..."
+          value={formData.companyBAddress}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => onInputChange('companyBAddress', event.target.value)}
         />
-        <p className="text-gray-500 text-xs font-mono mt-1">The company that will review and approve deliverables</p>
+        <p className="text-gray-500 text-xs font-mono mt-1">This wallet will receive the contract request in their Vault.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-gray-400 font-mono text-xs uppercase mb-2">Stake Amount (ALGO)</label>
+          <label className="block text-gray-400 font-mono text-xs uppercase mb-2">Escrow Amount (ALGO)</label>
           <input
             type="number"
             min={1}
@@ -73,7 +96,7 @@ const BusinessForm = ({ formData, loading, onChange, onSubmit }: BusinessFormPro
         </div>
 
         <div>
-          <label className="block text-gray-400 font-mono text-xs uppercase mb-2">Project Duration (Days)</label>
+          <label className="block text-gray-400 font-mono text-xs uppercase mb-2">Project Deadline (Days)</label>
           <input
             type="number"
             min={1}
@@ -121,30 +144,12 @@ const BusinessForm = ({ formData, loading, onChange, onSubmit }: BusinessFormPro
       <div className="p-4 border border-neon-green/20 rounded-lg bg-black/30">
         <h3 className="text-neon-green font-mono text-sm uppercase tracking-wider mb-3">Business Agreement Flow</h3>
         <ul className="space-y-2 text-gray-300 text-sm font-mono">
-          <li className="flex gap-2">
-            <span className="text-neon-green">1.</span>
-            <span>You (Company A) create contract and stake ALGO</span>
-          </li>
-          <li className="flex gap-2">
-            <span className="text-neon-green">2.</span>
-            <span>Company B accepts the request</span>
-          </li>
-          <li className="flex gap-2">
-            <span className="text-neon-green">3.</span>
-            <span>Company B submits deliverable document with SHA-256 hash</span>
-          </li>
-          <li className="flex gap-2">
-            <span className="text-neon-green">4.</span>
-            <span>Review period starts ({formData.reviewPeriodHours || 48} hours)</span>
-          </li>
-          <li className="flex gap-2">
-            <span className="text-neon-green">5.</span>
-            <span>You review and approve or reject</span>
-          </li>
-          <li className="flex gap-2">
-            <span className="text-neon-green">6.</span>
-            <span>Optimistic execution: Auto-refund if no rejection</span>
-          </li>
+          <li className="flex gap-2"><span className="text-neon-green">1.</span><span>You (Company A) create contract and stake ALGO</span></li>
+          <li className="flex gap-2"><span className="text-neon-green">2.</span><span>Company B accepts the request in their Vault</span></li>
+          <li className="flex gap-2"><span className="text-neon-green">3.</span><span>Company B submits deliverable document with SHA-256 hash</span></li>
+          <li className="flex gap-2"><span className="text-neon-green">4.</span><span>Review period starts ({formData.reviewPeriodHours || 48} hours)</span></li>
+          <li className="flex gap-2"><span className="text-neon-green">5.</span><span>You review and approve or reject</span></li>
+          <li className="flex gap-2"><span className="text-neon-green">6.</span><span>Optimistic execution: Auto-refund if no rejection</span></li>
         </ul>
       </div>
 
@@ -153,7 +158,7 @@ const BusinessForm = ({ formData, loading, onChange, onSubmit }: BusinessFormPro
         disabled={loading}
         className="w-full py-5 mt-4 bg-gradient-to-r from-neon-green to-neon-blue text-black font-bold font-mono text-xl rounded shadow-[0_0_20px_rgba(0,255,136,0.3)] hover:shadow-[0_0_40px_rgba(0,255,136,0.6)] transition-all uppercase tracking-wider disabled:opacity-50"
       >
-        {loading ? 'CREATING AGREEMENT...' : 'CREATE BUSINESS AGREEMENT'}
+        {loading ? 'CREATING AGREEMENT...' : 'LOCK ESCROW & CREATE'}
       </button>
     </form>
   )

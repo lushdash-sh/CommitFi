@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useWallet } from '@txnlab/use-wallet-react'
-import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, getDocs, getDoc, doc } from 'firebase/firestore'
 import { db } from '../utils/Firebase'
 
 interface StudyCircleHubProps {
@@ -15,76 +15,69 @@ const StudyCircleHub = ({ onSelectChallenge }: StudyCircleHubProps) => {
   useEffect(() => {
     if (!activeAddress) return
 
-    const challenges: any[] = []
+    const loadChallenges = async () => {
+      try {
+        const uniqueChallenges = new Map()
 
-    // 1. Challenges created by me (as Company A)
-    const qCreated = query(collection(db, 'challenges'), where('creator', '==', activeAddress))
-    const unsubCreated = onSnapshot(qCreated, (snap) => {
-      const created = snap.docs.map((d) => ({ id: d.id, ...d.data(), role: 'creator' }))
-      
-      // 2. Challenges I've joined (as participant)
-      const qJoined = query(
-        collection(db, 'requests'),
-        where('applicant', '==', activeAddress),
-        where('status', '==', 'approved')
-      )
-      getDocs(qJoined).then((snap) => {
-        const joinedIds = snap.docs.map((d) => d.data().challengeId)
-        
-        // Get challenge details for joined challenges
-        if (joinedIds.length > 0) {
-          joinedIds.forEach((id) => {
-            getDocs(query(collection(db, 'challenges'), where('__name__', '==', id))).then((snap2) => {
-              if (snap2.docs.length > 0) {
-                challenges.push({
-                  id: snap2.docs[0].id,
-                  ...snap2.docs[0].data(),
+        // 1. Challenges created by me (as creator)
+        const qCreated = query(collection(db, 'challenges'), where('creator', '==', activeAddress))
+        const unsubCreated = onSnapshot(qCreated, async (snap) => {
+          const created = snap.docs.map((d) => ({ id: d.id, ...d.data(), role: 'creator' }))
+          created.forEach((c) => uniqueChallenges.set(c.id, c))
+
+          // 2. Challenges I've joined (status 'approved') - ACADEMIC & FITNESS only
+          const qJoined = query(
+            collection(db, 'requests'),
+            where('applicant', '==', activeAddress),
+            where('status', '==', 'approved')
+          )
+          const joinedSnap = await getDocs(qJoined)
+          const joinPromises = joinedSnap.docs
+            .filter((d) => d.data().type !== 'business') // Skip business (handled separately)
+            .map(async (d) => {
+              const challengeSnap = await getDoc(doc(db, 'challenges', d.data().challengeId))
+              if (challengeSnap.exists()) {
+                uniqueChallenges.set(challengeSnap.id, {
+                  id: challengeSnap.id,
+                  ...challengeSnap.data(),
                   role: 'participant',
                 })
               }
             })
-          })
-        }
+          await Promise.all(joinPromises)
 
-        // 3. Contracts I've accepted (as Company B)
-        const qCompanyB = query(
-          collection(db, 'requests'),
-          where('applicant', '==', activeAddress),
-          where('type', '==', 'business'),
-          where('status', '==', 'approved')
-        )
-        getDocs(qCompanyB).then((snap) => {
-          snap.docs.forEach((doc) => {
-            getDocs(query(collection(db, 'challenges'), where('__name__', '==', doc.data().challengeId))).then(
-              (snap2) => {
-                if (snap2.docs.length > 0) {
-                  challenges.push({
-                    id: snap2.docs[0].id,
-                    ...snap2.docs[0].data(),
-                    role: 'company-b',
-                  })
-                }
-              }
-            )
+          // 3. Business contracts I've accepted (as Company B)
+          const qCompanyB = query(
+            collection(db, 'requests'),
+            where('applicant', '==', activeAddress),
+            where('type', '==', 'business'),
+            where('status', '==', 'approved')
+          )
+          const companyBSnap = await getDocs(qCompanyB)
+          const companyBPromises = companyBSnap.docs.map(async (d) => {
+            const challengeSnap = await getDoc(doc(db, 'challenges', d.data().challengeId))
+            if (challengeSnap.exists()) {
+              uniqueChallenges.set(challengeSnap.id, {
+                id: challengeSnap.id,
+                ...challengeSnap.data(),
+                role: 'company-b',
+              })
+            }
           })
+          await Promise.all(companyBPromises)
 
-          // Combine all and remove duplicates
-          setTimeout(() => {
-            const uniqueChallenges = new Map()
-            ;[...created].forEach((c) => uniqueChallenges.set(c.id, c))
-            challenges.forEach((c) => {
-              if (!uniqueChallenges.has(c.id)) {
-                uniqueChallenges.set(c.id, c)
-              }
-            })
-            setMyChallenges(Array.from(uniqueChallenges.values()))
-            setLoading(false)
-          }, 500)
+          setMyChallenges(Array.from(uniqueChallenges.values()))
+          setLoading(false)
         })
-      })
-    })
 
-    return () => unsubCreated()
+        return () => unsubCreated()
+      } catch (error) {
+        console.error('Error loading challenges:', error)
+        setLoading(false)
+      }
+    }
+
+    loadChallenges()
   }, [activeAddress])
 
   if (loading) {
