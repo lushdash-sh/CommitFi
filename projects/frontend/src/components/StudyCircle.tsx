@@ -146,7 +146,7 @@ const StudyCircle = ({ challengeId, onBack }: StudyCircleProps) => {
     }
   }
 
-  // NEW: Peer Review for the Leader's Submission
+  // Peer Review for the Leader's Submission
   const handleVoteForLeader = async (submissionId: string, currentVotes: number, requiredVotes: number) => {
     if (!activeAddress) return
     setActionLoading(true)
@@ -186,11 +186,166 @@ const StudyCircle = ({ challengeId, onBack }: StudyCircleProps) => {
   const challengeType: ChallengeType = challenge.type || 'academic'
 
   // ==========================================
-  // BUSINESS FLOW (Unchanged)
+  // BUSINESS FLOW
   // ==========================================
   if (challengeType === 'business') {
-      // ... (Keeping your exact Business flow code here to save space, no changes needed for this)
-      return <div className="text-center p-20 text-neon-blue font-mono">Business Flow Active (Rendered via earlier code)</div>
+    const isCompanyA = activeAddress === challenge.companyA
+    const isCompanyB = activeAddress === challenge.companyB
+
+    if (!challenge.companyB) {
+      return (
+        <div className="max-w-4xl mx-auto py-8 px-6">
+          {onBack && (
+            <button onClick={onBack} className="mb-6 px-4 py-2 bg-gray-700/50 text-gray-300 font-mono text-xs uppercase hover:bg-gray-700 transition rounded">
+              ← BACK TO YOUR CIRCLE
+            </button>
+          )}
+          <div className="bg-cyber-dark/40 border border-yellow-500/30 rounded-xl p-8 text-center">
+            
+            {/* ADDED TIMER TO AWAITING ACCEPTANCE */}
+            <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+              <h2 className="text-3xl font-cyber text-yellow-500">CONTRACT AWAITING ACCEPTANCE</h2>
+              <div className="bg-black/60 px-4 py-2 rounded-lg border border-gray-700 mt-4 md:mt-0 text-right">
+                <div className="text-[10px] text-gray-500 font-mono uppercase tracking-widest mb-1">Time Remaining</div>
+                <div className={`text-xl font-mono font-bold ${isExpired ? 'text-red-500' : 'text-white'}`}>
+                  {isExpired ? 'EXPIRED' : timeString}
+                </div>
+              </div>
+            </div>
+
+            <p className="text-gray-400 font-mono mb-6">{challenge.title}</p>
+            <div className="bg-black/40 p-4 rounded border border-gray-700 mb-6">
+              <p className="text-gray-300 font-mono text-sm">{challenge.description}</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-black/40 p-4 rounded border border-neon-green/30">
+                <div className="text-gray-400 font-mono text-xs uppercase mb-2">Stake Amount</div>
+                <div className="text-2xl font-bold text-neon-green">{challenge.stakeAmount} ALGO</div>
+              </div>
+              <div className="bg-black/40 p-4 rounded border border-neon-blue/30">
+                <div className="text-gray-400 font-mono text-xs uppercase mb-2">Deliverable Type</div>
+                <div className="text-lg font-bold text-neon-blue capitalize">{challenge.deliverableType}</div>
+              </div>
+              <div className="bg-black/40 p-4 rounded border border-neon-pink/30">
+                <div className="text-gray-400 font-mono text-xs uppercase mb-2">Review Period</div>
+                <div className="text-lg font-bold text-neon-pink">{challenge.reviewPeriodHours}h</div>
+              </div>
+            </div>
+            <p className="text-gray-500 font-mono text-sm mt-6">Waiting for Company B to accept this contract...</p>
+          </div>
+        </div>
+      )
+    }
+
+    if (isCompanyB && challenge.verificationStatus === 'awaiting-delivery' && !showReview) {
+      return (
+        <div className="max-w-4xl mx-auto py-8 px-6">
+          {onBack && (
+            <button onClick={onBack} className="mb-6 px-4 py-2 bg-gray-700/50 text-gray-300 font-mono text-xs uppercase hover:bg-gray-700 transition rounded">
+              ← BACK TO YOUR CIRCLE
+            </button>
+          )}
+          <BusinessDocumentSubmission
+            challengeId={challengeId}
+            companyBAddress={activeAddress!}
+            reviewPeriodHours={challenge.reviewPeriodHours}
+            onSubmitSuccess={() => {
+              getDoc(doc(db, 'challenges', challengeId)).then((snap) => {
+                if (snap.exists()) setChallenge({ id: snap.id, ...snap.data() })
+              })
+            }}
+          />
+        </div>
+      )
+    }
+
+    if ((isCompanyA || isCompanyB) && ['in-review', 'manual-dispute'].includes(challenge.verificationStatus)) {
+      return (
+        <div className="max-w-4xl mx-auto py-8 px-6">
+          {onBack && (
+            <button onClick={onBack} className="mb-6 px-4 py-2 bg-gray-700/50 text-gray-300 font-mono text-xs uppercase hover:bg-gray-700 transition rounded">
+              ← BACK TO YOUR CIRCLE
+            </button>
+          )}
+          <BusinessReviewComponent
+            challengeId={challengeId}
+            documentHash={challenge.documentHash}
+            documentFileName={challenge.documentFileName}
+            submissionDescription={challenge.submissionDescription}
+            reviewStartTimestamp={challenge.reviewStartTimestamp}
+            reviewEndTimestamp={challenge.reviewEndTimestamp}
+            companyAAddress={challenge.companyA}
+            currentAddress={activeAddress!}
+            onReviewComplete={() => {
+              getDoc(doc(db, 'challenges', challengeId)).then((snap) => {
+                if (snap.exists()) setChallenge({ id: snap.id, ...snap.data() })
+              })
+            }}
+          />
+        </div>
+      )
+    }
+
+    if (isCompanyA && challenge.verificationStatus === 'awaiting-delivery') {
+      return (
+        <div className="max-w-4xl mx-auto py-8 px-6">
+          {onBack && (
+            <button onClick={onBack} className="mb-6 px-4 py-2 bg-gray-700/50 text-gray-300 font-mono text-xs uppercase hover:bg-gray-700 transition rounded">
+              ← BACK TO YOUR CIRCLE
+            </button>
+          )}
+          <div className="bg-cyber-dark/40 border border-neon-blue/30 rounded-xl p-8">
+            
+            {/* ADDED TIMER TO CONTRACT DETAILS */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+              <h2 className="text-3xl font-cyber text-neon-blue">CONTRACT DETAILS</h2>
+              <div className="text-right bg-black/60 px-4 py-2 border border-gray-700 rounded-lg">
+                <div className="text-[10px] text-gray-500 font-mono uppercase tracking-widest mb-1">Time Remaining</div>
+                <div className={`text-2xl font-mono font-bold ${isExpired ? 'text-red-500' : 'text-white'}`}>
+                  {isExpired ? 'DEADLINE PASSED' : timeString}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-black/40 p-6 rounded-lg border border-gray-700">
+                <h3 className="text-xl font-bold text-white mb-3">{challenge.title}</h3>
+                <p className="text-gray-400 font-mono text-sm mb-6">{challenge.description}</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><div className="text-xs text-gray-500 uppercase mb-1">Stake Amount</div><div className="text-lg font-bold text-neon-green">{challenge.stakeAmount} ALGO</div></div>
+                  <div><div className="text-xs text-gray-500 uppercase mb-1">Deliverable Type</div><div className="text-lg font-bold text-neon-blue capitalize">{challenge.deliverableType}</div></div>
+                  <div><div className="text-xs text-gray-500 uppercase mb-1">Review Period</div><div className="text-lg font-bold text-neon-pink">{challenge.reviewPeriodHours}h</div></div>
+                  <div><div className="text-xs text-gray-500 uppercase mb-1">Company B</div><div className="text-lg font-bold text-neon-green font-mono">{challenge.companyBName || challenge.companyB?.slice(0, 6)}</div></div>
+                </div>
+              </div>
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-6 text-center">
+                <div className="text-2xl font-bold text-yellow-500 mb-2">AWAITING DELIVERY</div>
+                <p className="text-gray-400 font-mono text-sm">Company B is preparing the deliverable. You will review when submitted.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="max-w-4xl mx-auto py-8 px-6">
+        {onBack && (
+          <button onClick={onBack} className="mb-6 px-4 py-2 bg-gray-700/50 text-gray-300 font-mono text-xs uppercase hover:bg-gray-700 transition rounded">
+            ← BACK TO YOUR CIRCLE
+          </button>
+        )}
+        <div className="bg-cyber-dark/40 border border-neon-green/30 rounded-xl p-8 text-center">
+          <h2 className="text-3xl font-cyber text-neon-green mb-4">CONTRACT COMPLETED</h2>
+          <p className="text-gray-400 font-mono mb-6">Status: {challenge.verificationStatus.toUpperCase()}</p>
+          {challenge.companyADecision && (
+            <div className={`text-xl font-bold ${challenge.companyADecision === 'approved' ? 'text-neon-green' : 'text-red-500'}`}>
+              Decision: {challenge.companyADecision.toUpperCase()}
+            </div>
+          )}
+        </div>
+      </div>
+    )
   }
 
   // ==========================================
