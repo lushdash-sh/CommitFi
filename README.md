@@ -27,8 +27,8 @@ Node.js 18+ and
 npmAlgoKit CLI installedQuick 
 
 #### 1.Clone Repo
-git clone https://github.com/lushdash-sh/Hackspiration.git
-cd Hackspiration
+git clone https://github.com/lushdash-sh/CommitFi.git
+cd CommitFi
 
 #### 2. Bootstrap Project
 algokit project bootstrap all
